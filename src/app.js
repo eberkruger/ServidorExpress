@@ -3,7 +3,7 @@ const data = require('./test.json')
 const app = express()
 const port = 8080
 
-//app.use(express.urlencoded({extended:true}))
+app.use(express.urlencoded({extended:true}))
 
 app.get('/products', async (req, res) => {
   const { limit } = req.query
@@ -16,14 +16,17 @@ app.get('/products', async (req, res) => {
   }
 })
 
-
 app.get('/products/:pid', async (req, res) => {
   const productId = req.params.pid
   const productFound = data.find((prod) => {
     return prod.id == productId
   })
 
-  res.json({ productFound })
+  if (!productFound) {
+    res.send({ Error: 'El producto no existe' })
+  } else {
+    res.json({ productFound })
+  }
 })
 
 app.listen(port, async () => {
