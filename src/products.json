@@ -1,0 +1,38 @@
+[
+  {
+    "title": "Celular",
+    "description": "Smartphone Apple",
+    "price": 800,
+    "thumbnail": "Imagen1.jpg",
+    "code": "001",
+    "stock": 20,
+    "id": 1
+  },
+  {
+    "title": "Televisor",
+    "description": "Televisor Led LG 4K",
+    "price": 1200,
+    "thumbnail": "Imagen2.jpg",
+    "code": "002",
+    "stock": 20,
+    "id": 2
+  },
+  {
+    "title": "Auricular",
+    "description": "Ariculares inalámbricos",
+    "price": 500,
+    "thumbnail": "Imagen3.jpg",
+    "code": "003",
+    "stock": 20,
+    "id": 3
+  },
+  {
+    "title": "Notebook",
+    "description": "Computadora portátil",
+    "price": 1200,
+    "thumbnail": "Imagen2.jpg",
+    "code": "004",
+    "stock": 20,
+    "id": 4
+  }
+]

@@ -1,142 +1,151 @@
-const fs = require('fs')
+import fs from 'fs'
 
-class ProductManager {
+export default class ProductManager {
+
   constructor(path) {
-    this.path = path
-    this.products = []
+    this.path = path;
   }
 
-  async addProduct(title, description, price, thumbnail, code, stock) {
-
-    if (!title || !description || !price || !thumbnail || !code || !stock) {
-      console.log('Todos los campos son obligatorios')
-      return
-    }
-
-    if (this.products.some(product => product.code === code)) {
-      console.log(`Ya existe un producto con el mismo código ${code}`)
-      return
-    }
-
-    const product = {
-      id: this.products.length + 1,
-      title,
-      description,
-      price,
-      thumbnail,
-      code,
-      stock,
-    }
-
-    this.products.push(product)
-
+  addProduct = async (obj) => {
     try {
-      await fs.promises.writeFile(this.path, JSON.stringify(this.products, null, 2), 'utf-8')
-      /* if (product.id) {
-        console.log('El producto ya fue agregado')
-      } */
-      return product.id
-    } catch (err) {
-      console.log('Error al agregar producto', err)
-    }
-  }
+      const products = await this.getProducts();
 
-  async getProduts() {
-    try {
-      const data = await fs.promises.readFile(this.path, 'utf-8')
-      const dataParse = JSON.parse(data)
-      if (dataParse.length <= 0) {
-        console.log('No hay productos en la base de datos!!')
+      const product = {
+        title: obj.title,
+        description: obj.description,
+        price: obj.price,
+        thumbnail: obj.thumbnail,
+        code: obj.code,
+        stock: obj.stock,
+      };
+
+      const { title, description, price, thumbnail, code, stock } = product;
+
+      if (!title || !description || !price || !thumbnail || !code || !stock) {
+        console.log('Todos los campos son obligatorios');
+        return;
+      }
+
+      const codeFind = products.find((prod) => prod.code === code);
+      if (codeFind) return console.log(`Ya existe un producto con el código ${code}`);
+
+      if (products.length === 0) {
+        product.id = 1;
       } else {
-        console.log('Lista de productos existentes: \n', dataParse)
+        product.id = products[products.length - 1].id + 1;
       }
-    } catch (err) {
-      console.log('Error al obtener los productos', err)
-    }
-  }
 
-  async getProdutsById(id) {
-    const data = await fs.promises.readFile(this.path, 'utf-8')
-    const dataParse = JSON.parse(data)
-    const product = dataParse.find((prod) => prod.id === id)
-    if (!product) {
-      console.log('El producto no se encuentra')
+      products.push(product);
+      await fs.promises.writeFile(this.path, JSON.stringify(products, null, 2), 'utf-8');
+      console.log('Producto agregado correctamente')
+      const productsList = await this.getProducts();
+      console.log(productsList);
+
+    } catch (err) {
+      console.log('Error al agregar producto', err);
+    }
+  };
+
+  updateProduct = async (id, obj) => {
+    try {
+      const products = await this.getProducts();
+      const productBuscado = await this.getProductById(id);
+
+      const product = { ...productBuscado, ...obj };
+
+      const indexProduct = products.findIndex((prod) => prod.id === id);
+      products.splice(indexProduct, 1);
+
+      products.push(product);
+      await fs.promises.writeFile(this.path, JSON.stringify(products, null, 2));
+
+      const productsList = await this.getProducts();
+      console.log(productsList);
+
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  getProducts = async () => {
+    try {
+      if (fs.existsSync(this.path)) {
+        const data = await fs.promises.readFile(this.path, 'utf-8');
+        const dataParse = JSON.parse(data);
+        console.log(dataParse)
+        return dataParse;
+      } else {
+        return [];
+      }
+
+    } catch (err) {
+      console.log('Error al obtener los productos', err);
+    }
+  };
+
+  getProductById = async (id) => {
+    try {
+      const products = await this.getProducts();
+      const product = products.find((prod) => prod.id === id);
+      
+      if (!product) {
+        console.log("El producto no existe");
+        return undefined;
+      } else {
+        console.log(`El producto con el ID ${id} es: ${product.title}`);
+        return;
+      }
+
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  deleteById = async (id) => {
+    const products = await this.getProducts();
+    const index = products.findIndex((prod) => prod.id === id);
+
+    if (index !== -1) {
+      products.splice(index, 1);
     } else {
-      console.log(`El producto con el ID ${id} es: ${JSON.stringify(product, null, 2)}`)
+      console.log("El producto no se encuentra");
+      return;
     }
-  }
 
-  async deleteProduct(id) {
+    await fs.promises.writeFile(this.path, JSON.stringify(products, null, 2));
+
+    const productsList = await this.getProducts();
+    console.log(productsList);
+  };
+
+  deleteAll = async () => {
     try {
-      const data = await fs.promises.readFile(this.path, 'utf-8')
-      const dataParse = JSON.parse(data)
-      const index = dataParse.findIndex((prod) => prod.id === id)
-      if (index === -1) {
-        console.log('El producto no se encuentra')
-        return
+      if (fs.existsSync(this.path)) {
+        await fs.promises.unlink(this.path);
+        console.log("Todos los elementos borrados exitosamente");
+      } else {
+        console.log("No hay elementos a eliminar");
       }
 
-      const deletedProduct = dataParse.splice(index, 1)[0]
-      await fs.promises.writeFile(this.path, JSON.stringify(dataParse, null, 2), 'utf-8')
-      console.log(`El producto con el ID ${id} ha sido eliminado: ${JSON.stringify(deletedProduct, null, 2)}`)
     } catch (err) {
-      console.log('Error al eliminar el producto', err)
+      console.log(err);
     }
-  }
-
-  async deleteAllProducts() {
-    try {
-      await fs.promises.writeFile(this.path, 'utf-8')
-      console.log('Todos los productos han sido eliminados')
-    } catch (err) {
-      console.log('Error al eliminar todos los productos', err)
-    }
-  }
-
-  async updateProduct(id, updatedFields) {
-    try {
-      const data = await fs.promises.readFile(this.path, 'utf-8')
-      const dataParse = JSON.parse(data)
-      const productIndex = dataParse.findIndex((prod) => prod.id === id)
-      if (productIndex === -1) {
-        console.log('El producto no se encuentra')
-        return
-      }
-
-      const updatedProduct = { ...dataParse[productIndex], ...updatedFields }
-      dataParse[productIndex] = updatedProduct
-
-      await fs.promises.writeFile(this.path, JSON.stringify(dataParse, null, 2), 'utf-8')
-      console.log(`El producto con ID ${id} ha sido actualizado: ${JSON.stringify(updatedProduct, null, 2)}`)
-    } catch (err) {
-      console.log('Error al actualizar el producto', err)
-    }
-  }
+  };
 }
 
-const productManager = new ProductManager('./test.json');
+//const productManager = new ProductManager('./products.json');
 
-// Testing
+//productManager.addProduct({ title: 'Celular', description: 'Smartphone Apple', price: 800, thumbnail: 'Imagen1.jpg', code: '001', stock: 20 })
+//productManager.addProduct({ title: 'Televisor', description: 'Televisor Led LG 4K', price: 1200, thumbnail: 'Imagen2.jpg', code: '002', stock: 20 })
+//productManager.addProduct({ title: 'Auricular', description: 'Ariculares inalámbricos', price: 500, thumbnail: 'Imagen3.jpg', code: '003', stock: 20 })
+//productManager.addProduct({ title: 'Notebook', description: 'Computadora portátil', price: 1200, thumbnail: 'Imagen2.jpg', code: '004', stock: 20 })
 
-//Agrega productos al array
-productManager.addProduct('Producto 1', 'Descripción prueba 1', 800, 'imagen1.jpg', 'P001', 20)
-productManager.addProduct('Producto 2', 'Descripción prueba 2', 400, 'imagen2.jpg', 'P002', 20)
-productManager.addProduct('Producto 3', 'Descripción prueba 3', 600, 'imagen3.jpg', 'P003', 20)
-productManager.addProduct('Producto 4', 'Descripción prueba 4', 150, 'imagen4.jpg', 'P004', 20)
-productManager.addProduct('Producto 5', 'Descripción prueba 5', 200, 'imagen5.jpg', 'P005', 20)
-productManager.addProduct('Producto 6', 'Descripción prueba 6', 700, 'imagen6.jpg', 'P006', 20)
-productManager.addProduct('Producto 7', 'Descripción prueba 7', 650, 'imagen7.jpg', 'P007', 20)
-productManager.addProduct('Producto 8', 'Descripción prueba 8', 120, 'imagen8.jpg', 'P008', 20)
-productManager.addProduct('Producto 9', 'Descripción prueba 9', 850, 'imagen9.jpg', 'P009', 20)
-productManager.addProduct('Producto 10', 'Descripción prueba 10', 900, 'imagen10.jpg', 'P0010', 20)
+//productManager.getProducts()
 
-//productManager.getProduts() // Muestra todos los productos existentes
+//productManager.getProductById(2)
 
-//productManager.getProdutsById(2) // Muestra el producto con el id que pasamos
+//productManager.deleteById(1)
 
-//productManager.deleteProduct(5) // Elimina el producto con id específico
+//productManager.deleteAll()
 
-//productManager.deleteAllProducts() // Elimina todos los productos
-
-//productManager.updateProduct(1, {title:'Celular Modificado', price: 5000}) // Actualiza el producto con ID especificado utilizando los campos actualizados
-
+//productManager.updateProduct(1, {title: 'Celular', description: 'Smartphone Apple', price: 900, thumbnail: 'Imagen1.jpg', code: '001', stock: 20} )
